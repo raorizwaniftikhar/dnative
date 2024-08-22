@@ -4,12 +4,14 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 public class FileWriterTask {
 
     private static final String FILE_NAME = "output.txt";
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private static final Random RANDOM = new Random();
     private static Calendar calendar;
 
     static {
@@ -25,22 +27,48 @@ public class FileWriterTask {
     public static void main(String[] args) {
         while (true) {
             try {
-                // Simulate time by incrementing 10 seconds
-                String commitDate = DATE_FORMAT.format(calendar.getTime());
-                writeToFile(commitDate);
-                commitChanges(commitDate);
+                // Randomly decide the number of commits for the current day (between 15 and 50)
+                int commitsToday = RANDOM.nextInt(36) + 15; // 15 to 50 commits
 
-                // Increment time by 10 seconds
-                calendar.add(Calendar.SECOND, 10);
+                for (int i = 0; i < commitsToday; i++) {
+                    // Simulate random time progression within the day
+                    int randomMinutes = RANDOM.nextInt(60);
+                    calendar.add(Calendar.MINUTE, randomMinutes);
+                    String commitDate = DATE_FORMAT.format(calendar.getTime());
 
-                // Check if the simulated date has reached or exceeded the current date
-                if (calendar.getTime().compareTo(new Date()) >= 0) {
-                    System.out.println("Reached current date, stopping the program.");
-                    break;
+                    // Skip the next 9 hours if the time is after 11:00 PM
+                    if (calendar.get(Calendar.HOUR_OF_DAY) >= 23) {
+                        calendar.add(Calendar.HOUR_OF_DAY, 9);
+                        calendar.set(Calendar.MINUTE, 0); // Reset minutes after skipping
+                        continue;
+                    }
+
+                    // Randomly skip Saturdays or Sundays
+                    int dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
+                    if ((dayOfWeek == Calendar.SATURDAY || dayOfWeek == Calendar.SUNDAY) && RANDOM.nextBoolean()) {
+                        System.out.println("Skipping " + (dayOfWeek == Calendar.SATURDAY ? "Saturday" : "Sunday") + ", no commits today.");
+                        break; // Skip the rest of the day
+                    }
+
+                    // Write to file and commit changes
+                    writeToFile(commitDate);
+                    commitChanges(commitDate);
+
+                    // Sleep to avoid CPU overloading (for simulation purposes)
+                    TimeUnit.MILLISECONDS.sleep(500);
+
+                    // Check if the simulated date has reached or exceeded the current date
+                    if (calendar.getTime().compareTo(new Date()) >= 0) {
+                        System.out.println("Reached current date, stopping the program.");
+                        return;
+                    }
                 }
 
-                // Sleep for a short time to avoid overloading the CPU (for simulation purposes)
-                TimeUnit.MILLISECONDS.sleep(500);
+                // Move to the next day
+                calendar.add(Calendar.DAY_OF_MONTH, 1);
+                calendar.set(Calendar.HOUR_OF_DAY, 0);
+                calendar.set(Calendar.MINUTE, 0);
+                calendar.set(Calendar.SECOND, 0);
 
             } catch (IOException | InterruptedException e) {
                 e.printStackTrace();
